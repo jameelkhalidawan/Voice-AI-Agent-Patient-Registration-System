@@ -7,6 +7,7 @@ from typing import AsyncIterator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.dashboard import router as dashboard_router
 from app.api.errors import install_exception_handlers
 from app.api.middleware import RequestGuardMiddleware
 from app.api.routes.patients import router as patients_router
@@ -43,6 +44,7 @@ if origins:
     )
 app.include_router(patients_router)
 app.include_router(vapi_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health", tags=["health"])

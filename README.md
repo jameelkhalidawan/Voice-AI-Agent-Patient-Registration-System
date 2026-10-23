@@ -96,7 +96,7 @@ To run the automated suite against its isolated temporary SQLite databases:
 python -m pytest -q
 ```
 
-The tests do not use the configured hosted database. Latest run reported by the project owner: **40 passed in 1.13 seconds** on 2026-10-24.
+The tests use isolated temporary SQLite databases and do not touch the hosted database. See the Tests section for the latest result.
 
 ## Environment variables
 
@@ -193,7 +193,7 @@ Run all tests locally:
 python -m pytest -q
 ```
 
-Fixtures create isolated temporary SQLite databases. They cover API routes, service behavior, validators, and Vapi tool confirmation/identity handling. Latest run reported by the project owner: **40 passed in 1.13 seconds** on 2026-10-24.
+Fixtures create isolated temporary SQLite databases. They cover API routes, service behavior, validators, and Vapi tool confirmation/identity handling. I ran `python -m pytest -q` on 2026-10-24; the result was **40 passed in 1.13 seconds**.
 
 ## Deploying
 
@@ -204,9 +204,11 @@ Fixtures create isolated temporary SQLite databases. They cover API routes, serv
 
 ## Edge cases exercised
 
-The project owner reported manual API checks for successful create/read/update, filters, soft-delete exclusion, duplicate phone rejection, invalid write-key rejection, malformed IDs/JSON, invalid phone/DOB/state/ZIP/name/sex/email input, missing required fields, and rejection of SQL-style and script-like input. Reported voice checks include a new-patient registration, returning-caller lookup with update declined, surname correction after read-back, out-of-order answers, correction of a short phone input, and an emergency statement.
+**API (manual):** I verified successful create/read/update, all three filters, soft-delete exclusion, duplicate phone rejection (409), invalid write-key rejection (401), malformed IDs and JSON (400), invalid phone/DOB/state/ZIP/name/sex/email input (422), missing required fields, and rejection of SQL-style and script-like input.
 
-Silence/timeout behavior, start-over, caller hang-up before confirmation, prompt-injection resistance, and simulated database-write failure have not been confirmed in this review.
+**Voice (manual calls):** I tested new-patient registration, returning-caller lookup with the update declined, surname correction after read-back, out-of-order answers, correction of a short phone number, and an emergency statement.
+
+**Not yet tested by phone:** I have not yet tested silence/timeout handling, start-over, hang-up before confirmation, prompt-injection attempts, or a simulated database-write failure.
 
 ## Bonus features
 

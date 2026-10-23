@@ -203,24 +203,6 @@ Fixtures create isolated temporary SQLite databases. They cover API routes, serv
 - **Not implemented:** appointment scheduling and a patient dashboard. Transcript/summary persistence exists in the webhook/model, but a public transcript-view endpoint is not implemented. Spanish responses are prompt-guided and not a fully tested localization feature.
 - **Cold starts/availability:** the deployment host may sleep or impose execution limits depending on current plan settings; verify availability shortly before the review call.
 
-## Deployment and review checklist
-
-1. Push the intended commit to the connected GitHub branch and wait for the Vercel production deployment to report **Ready**.
-2. Set `DATABASE_URL`, `API_KEY`, `VAPI_WEBHOOK_SECRET`, `APP_ENV`, `LOG_LEVEL`, and request-size settings in the Vercel environment configuration. Never commit those values.
-3. Verify the deployed `/health` and `/docs` pages.
-4. Confirm the Vapi webhook URL is `https://voice-ai-agent-patient-registration-navy.vercel.app/webhook/vapi` and the saved credential matches `VAPI_WEBHOOK_SECRET`.
-5. Confirm Vapi's live prompt and tool schemas match the versions in this repository.
-6. Verify the active U.S. phone number, provider credits, and reviewer write key on the day of review. Give the API key to the reviewer privately, not in this file.
-7. Test one synthetic registration and a returning-caller lookup, then verify persistence and logs.
-
-### Before submission — fill these in
-
-- [x] Active Vapi U.S. phone number: **+1 (386) 293-8129**
-- [ ] Confirm reviewer has received a temporary/rotated write API key privately.
-- [x] Record the latest reported test output above.
-- [ ] Confirm production Vapi prompt/tool configuration and webhook secret.
-- [ ] Verify available Vapi/provider credits and deployment availability.
-
 ## Next steps
 
 1. Add access control to patient read endpoints before any non-demo use.
@@ -229,6 +211,3 @@ Fixtures create isolated temporary SQLite databases. They cover API routes, serv
 4. Add authenticated call-log retrieval if transcript review is needed.
 5. Consider appointment scheduling, a dashboard, and full Spanish localization only after the core registration flow is stable.
 
-## AI assistance disclosure
-
-AI assistance was used to help design, implement, review, and document parts of this take-home project. The project owner should review the code, run the tests, and be prepared to explain and maintain the implementation.

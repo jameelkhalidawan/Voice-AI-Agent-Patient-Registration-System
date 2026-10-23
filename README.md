@@ -7,6 +7,7 @@ A take-home demonstration of a phone-based patient registration workflow backed 
 ## Live demo
 
 - **API base URL:** <https://voice-ai-agent-patient-registration-navy.vercel.app>
+- **Patient dashboard:** <https://voice-ai-agent-patient-registration-navy.vercel.app/dashboard>
 - **Health:** <https://voice-ai-agent-patient-registration-navy.vercel.app/health>
 - **Interactive API docs:** <https://voice-ai-agent-patient-registration-navy.vercel.app/docs>
 - **Vapi phone number:** **+1 (386) 293-8129**
@@ -51,7 +52,7 @@ flowchart LR
 
 ```text
 app/
-  api/                 REST routes, schemas, auth, middleware, errors
+  api/                 REST routes, dashboard, schemas, auth, middleware, errors
   data/                SQLAlchemy models and database session
   prompts/              Versioned voice-agent system prompt
   services/             Shared validation and patient CRUD service
@@ -97,6 +98,10 @@ python -m pytest -q
 ```
 
 The tests use isolated temporary SQLite databases and do not touch the hosted database. See the Tests section for the latest result.
+
+## Dashboard
+
+The read-only dashboard is available at `/dashboard`. It fetches the public `GET /patients` endpoint and shows each patient's name, date of birth, masked phone number (last four digits only), city/state, preferred language, and creation time in the viewer's local time. Search filters the loaded rows by name or phone suffix. It omits email, street address, insurance, and emergency-contact fields to minimize exposure, but the underlying patient read API is public, so use fake data only.
 
 ## Environment variables
 
@@ -193,7 +198,7 @@ Run all tests locally:
 python -m pytest -q
 ```
 
-Fixtures create isolated temporary SQLite databases. They cover API routes, service behavior, validators, and Vapi tool confirmation/identity handling. I ran `python -m pytest -q` on 2026-10-24; the result was **40 passed in 1.13 seconds**.
+Fixtures create isolated temporary SQLite databases. They cover API routes, service behavior, validators, Vapi tool confirmation/identity handling, and dashboard response/rendering markers. The most recent reported run was `python -m pytest -q`: **42 passed in 1.68 seconds**.
 
 ## Deploying
 
@@ -208,16 +213,17 @@ Fixtures create isolated temporary SQLite databases. They cover API routes, serv
 
 **Voice (manual calls):** I tested new-patient registration, returning-caller lookup with the update declined, surname correction after read-back, out-of-order answers, correction of a short phone number, and an emergency statement.
 
-**Not yet tested by phone:** I have not yet tested silence/timeout handling, start-over, hang-up before confirmation, prompt-injection attempts, or a simulated database-write failure.
+**Not yet tested by phone:** silence/timeout handling, start-over, hang-up before confirmation, prompt-injection attempts, and a simulated database-write failure.
 
 ## Bonus features
 
-- **Present:** duplicate-phone lookup and returning-caller identity verification; end-of-call transcript/summary storage when Vapi supplies the report; automated tests.
-- **Not implemented:** appointment scheduling, a patient dashboard, and a public endpoint for viewing call transcripts. Spanish responses are prompt-guided but are not a fully tested localization feature.
+- **Present:** duplicate-phone lookup and returning-caller identity verification; end-of-call transcript/summary storage when Vapi supplies the report; automated tests; read-only patient dashboard.
+- **Not implemented:** appointment scheduling and a public endpoint for viewing call transcripts. Spanish responses are prompt-guided but are not a fully tested localization feature.
 
 ## Known limitations and trade-offs
 
 - **Public reads:** `GET /patients` and `GET /patients/{id}` do not require authentication. Deployment is for fake/demo data only; this needs access control before any real patient information could be considered.
+- **Dashboard access:** the dashboard reads the same public patient API. It masks phone numbers and omits more sensitive columns in its UI, but this is not access control for the underlying data.
 - **Confirmation:** the backend trusts the `caller_confirmation: "yes"` tool argument and does not independently match it to the audio/transcript. The prompt tells the agent to set it only after the caller says yes.
 - **Vapi configuration:** prompt, tool schemas, phone-number assignment, speech provider, and webhook credential are dashboard settings and must be checked against the repo and deployment.
 - **Migrations:** schema creation uses `create_all`; there is no Alembic history or automated deployment migration.
@@ -232,7 +238,7 @@ Fixtures create isolated temporary SQLite databases. They cover API routes, serv
 2. Add Alembic migrations and deployment-safe migration instructions.
 3. Add integration tests for webhook event payloads and failure cases.
 4. Add authenticated call-log retrieval if transcript review is needed.
-5. Consider appointment scheduling, a dashboard, and full Spanish localization only after the core registration flow is stable.
+5. Consider appointment scheduling and full Spanish localization only after the core registration flow is stable.
 
 ## AI assistance
 

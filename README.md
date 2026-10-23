@@ -9,7 +9,7 @@ A take-home demonstration of a phone-based patient registration workflow backed 
 - **API base URL:** <https://voice-ai-agent-patient-registration-navy.vercel.app>
 - **Health:** <https://voice-ai-agent-patient-registration-navy.vercel.app/health>
 - **Interactive API docs:** <https://voice-ai-agent-patient-registration-navy.vercel.app/docs>
-- **Vapi phone number:** **TODO: add the active U.S. number before submission.**
+- **Vapi phone number:** **+1 (386) 293-8129**
 - **Repository:** <https://github.com/jameelkhalidawan/Voice-AI-Agent-Patient-Registration-System>
 - **Reviewer write key:** Share a temporary or rotated `API_KEY` privately with the reviewer. Never put a real key in this repository, README, issue, or screenshot.
 
@@ -96,7 +96,7 @@ To run the automated suite against its isolated temporary SQLite databases:
 python -m pytest -q
 ```
 
-The tests do not use the configured hosted database. **Test status after the latest webhook/prompt changes: not yet rerun.** Update this note with the actual result before submission.
+The tests do not use the configured hosted database. **Latest reported result:** 40 passed in 1.13 seconds (run by the project owner on 2026-10-24).
 
 ## Environment variables
 
@@ -189,7 +189,7 @@ Run all tests locally:
 python -m pytest -q
 ```
 
-Fixtures create isolated temporary SQLite databases. They cover API routes, service behavior, validators, and Vapi tool confirmation/identity handling. No tests have been run as part of this README update. Record fresh test output after the latest code changes before submission.
+Fixtures create isolated temporary SQLite databases. They cover API routes, service behavior, validators, and Vapi tool confirmation/identity handling. The project owner reported 40 passing tests in 1.13 seconds on 2026-10-24. Tests were not run as part of this README update.
 
 ## Known limitations and trade-offs
 
@@ -215,9 +215,9 @@ Fixtures create isolated temporary SQLite databases. They cover API routes, serv
 
 ### Before submission — fill these in
 
-- [ ] Active Vapi U.S. phone number: **TODO**
+- [x] Active Vapi U.S. phone number: **+1 (386) 293-8129**
 - [ ] Confirm reviewer has received a temporary/rotated write API key privately.
-- [ ] Replace test-status note above with fresh test output.
+- [x] Record the latest reported test output above.
 - [ ] Confirm production Vapi prompt/tool configuration and webhook secret.
 - [ ] Verify available Vapi/provider credits and deployment availability.
 

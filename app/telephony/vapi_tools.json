@@ -41,7 +41,7 @@
     "async": false,
     "function": {
       "name": "save_patient",
-      "description": "Create a patient only after a fresh caller yes to the full read-back. Include only optional details the caller chose to provide. The server revalidates fields and prevents duplicate active phones. If the result has duplicate:true and identity_verified:true, do not retry save: tell the caller an existing record was found, ask whether they want to update, and require a fresh read-back confirmation before update. If identity_verified is false, disclose no record details and offer a callback.",
+      "description": "Create a patient only after the caller clearly says yes to the full read-back. Include only optional details the caller chose to provide. Set caller_confirmation to yes only after hearing that yes; the server checks the tool argument but does not inspect the transcript. The server revalidates fields and prevents duplicate active phones. If the result has duplicate:true and identity_verified:true, do not retry save: tell the caller an existing record was found, ask whether they want to update, and require a fresh read-back confirmation before update. If identity_verified is false, disclose no record details and offer a callback.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -80,7 +80,7 @@
     "async": false,
     "function": {
       "name": "update_patient",
-      "description": "Update only the changed fields of an identity-verified returning patient, and only after the caller explicitly confirms the read-back of those changes. Do not send unchanged fields.",
+      "description": "Update only the changed fields of an identity-verified returning patient, and only after the caller explicitly confirms the read-back of those changes. Set caller_confirmation to yes only after hearing the caller's yes; the server checks the tool argument but does not inspect the transcript. Do not send unchanged fields.",
       "parameters": {
         "type": "object",
         "properties": {

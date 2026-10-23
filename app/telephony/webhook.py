@@ -206,26 +206,8 @@ def _handle_validate(args: dict[str, Any]) -> dict[str, Any]:
     return {"valid": True, "field": field, "normalized_value": _json_safe(normalized[field])}
 
 
-def _message_text(message: dict[str, Any]) -> str:
-    """Extract readable text from a Vapi conversation message."""
-
-    for key in ("message", "content", "text"):
-        value = message.get(key)
-        if isinstance(value, str):
-            return value
-        if isinstance(value, list):
-            parts = [
-                item.get("text", "")
-                for item in value
-                if isinstance(item, dict) and isinstance(item.get("text"), str)
-            ]
-            if parts:
-                return " ".join(parts)
-    return ""
-
-
 def _workflow_state(session: Session, call_id: str | None) -> dict[str, Any]:
-    """Read live conversation evidence persisted in the call transcript field."""
+    """Read short-lived backend verification state for a call."""
 
     if not call_id:
         return {}
@@ -271,82 +253,6 @@ def _set_verified_patient(
         logger.error("vapi_identity_state_write_failed", extra={"call_id": call_id})
 
 
-def _is_clear_affirmative(text: str) -> bool:
-    """Accept a clear affirmative, rejecting qualified or contradictory replies."""
-
-    normalized = " ".join(text.casefold().strip().split())
-    if any(word in normalized for word in (" but ", " except ", " not ", " however ")):
-        return False
-    return normalized.startswith(
-        ("yes", "yeah", "yep", "correct", "that's right", "that is right", "i confirm", "go ahead")
-    )
-
-
-def _spoken_confirmation_index(state: dict[str, Any]) -> int | None:
-    """Return the user-turn index for a fresh affirmative after a read-back."""
-
-    messages = state.get("messages")
-    if not isinstance(messages, list):
-        return None
-    local_user_index = next(
-        (index for index in range(len(messages) - 1, -1, -1) if messages[index].get("role") == "user"),
-        None,
-    )
-    if local_user_index is None:
-        return None
-    user_text = messages[local_user_index].get("text", "")
-    if not isinstance(user_text, str) or not _is_clear_affirmative(user_text):
-        return None
-    assistant = next(
-        (
-            messages[index]
-            for index in range(local_user_index - 1, -1, -1)
-            if messages[index].get("role") == "assistant"
-        ),
-        None,
-    )
-    if not assistant:
-        return None
-    prompt = assistant.get("text", "").casefold()
-    confirmed = any(
-        phrase in prompt
-        for phrase in (
-            "is all of that correct",
-            "is everything correct",
-            "is that right",
-            "is that correct",
-            "is the rest still correct",
-            "are those changes correct",
-        )
-    )
-    absolute_index = messages[local_user_index].get("index", local_user_index)
-    return absolute_index if confirmed and isinstance(absolute_index, int) else None
-
-
-def _handle_conversation_update(message: dict[str, Any], session: Session) -> None:
-    """Keep committed user and assistant turns for a server-side consent gate."""
-
-    call_id = _call_id(message)
-    raw_messages = message.get("messages")
-    if not call_id or not isinstance(raw_messages, list):
-        return
-    messages: list[dict[str, Any]] = []
-    base_index = max(0, len(raw_messages) - 100)
-    for index, item in enumerate(raw_messages[base_index:], start=base_index):
-        if not isinstance(item, dict) or item.get("role") not in {"assistant", "user"}:
-            continue
-        text = _message_text(item).strip()[:4000]
-        if text:
-            messages.append({"index": index, "role": item["role"], "text": text})
-    state = _workflow_state(session, call_id)
-    state["messages"] = messages
-    try:
-        _save_workflow_state(session, call_id, state)
-    except SQLAlchemyError:
-        session.rollback()
-        logger.error("vapi_conversation_state_write_failed", extra={"call_id": call_id})
-
-
 def _require_confirmation(
     args: dict[str, Any],
     session: Session,
@@ -354,7 +260,7 @@ def _require_confirmation(
     *,
     verified_patient_id: str | None = None,
 ) -> None:
-    """Require both a model flag and verified Vapi conversation evidence."""
+    """Require an explicit confirmation flag and, for updates, verified identity."""
 
     if args.get("caller_confirmation") != "yes":
         raise FieldValidationError(
@@ -362,25 +268,11 @@ def _require_confirmation(
             "Do not save or update until the caller explicitly confirms the complete read-back.",
         )
     state = _workflow_state(session, call_id)
-    confirmation_index = _spoken_confirmation_index(state)
-    if confirmation_index is None:
-        raise FieldValidationError(
-            "caller_confirmation",
-            "The server has not received a clear caller yes after the complete read-back. Read it back, ask whether it is correct, and wait for the caller's answer before trying again.",
-        )
-    consumed_index = state.get("consumed_confirmation_index", -1)
-    if not isinstance(consumed_index, int) or confirmation_index <= consumed_index:
-        raise FieldValidationError(
-            "caller_confirmation",
-            "That confirmation was already used. Read back the current information or proposed changes, ask whether they are correct, and wait for a fresh yes.",
-        )
     if verified_patient_id is not None and state.get("verified_patient_id") != verified_patient_id:
         raise FieldValidationError(
             "patient_id",
             "The existing record was not verified by the server during this call. Do not update it; offer a clinic callback.",
         )
-    state["consumed_confirmation_index"] = confirmation_index
-    _save_workflow_state(session, call_id, state)
 
 
 def _handle_save(
@@ -628,10 +520,7 @@ def receive_vapi_webhook(
         _handle_end_of_call(message, session)
         return {"received": True}
     if message_type in {"conversation-update", "transcript"}:
-        if message_type == "conversation-update":
-            _handle_conversation_update(message, session)
-        # Transcript-only messages do not contain both sides of the confirmation
-        # exchange, so they are intentionally insufficient to authorize a write.
+        # Conversation text is not needed for tool authorization and is not stored here.
         return {"received": True}
     logger.info(
         "vapi_event_received",

@@ -1,0 +1,117 @@
+[
+  {
+    "type": "function",
+    "async": false,
+    "function": {
+      "name": "lookup_patient_by_phone",
+      "description": "Look up an active patient by the phone number they just provided. On the first call, send only phone_number; the server will not disclose record details. If a record is found and the caller's DOB is already collected and validated, call again with both values; otherwise ask for DOB first. Never reveal stored details unless identity_verified is true.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "phone_number": { "type": "string", "description": "The caller's US phone number." },
+          "date_of_birth": { "type": "string", "description": "Only on the second lookup, the caller's DOB in MM/DD/YYYY or ISO YYYY-MM-DD form." }
+        },
+        "required": ["phone_number"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "async": false,
+    "function": {
+      "name": "validate_field",
+      "description": "Validate and normalize one collected field using the backend's authoritative rules. Call again only for the specific field that failed. Do not invent or fill missing values.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": ["first_name", "last_name", "date_of_birth", "sex", "phone_number", "email", "address_line_1", "address_line_2", "city", "state", "zip_code", "insurance_provider", "insurance_member_id", "preferred_language", "emergency_contact_name", "emergency_contact_phone"]
+          },
+          "value": { "type": ["string", "null"], "description": "The caller-provided value for this field." }
+        },
+        "required": ["field", "value"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "async": false,
+    "function": {
+      "name": "save_patient",
+      "description": "Create a patient only after a fresh caller yes to the full read-back. Include only optional details the caller chose to provide. The server revalidates fields and prevents duplicate active phones. If the result has duplicate:true and identity_verified:true, do not retry save: tell the caller an existing record was found, ask whether they want to update, and require a fresh read-back confirmation before update. If identity_verified is false, disclose no record details and offer a callback.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "caller_confirmation": { "type": "string", "enum": ["yes"], "description": "Set to yes only after an explicit caller confirmation of the complete read-back." },
+          "patient": {
+            "type": "object",
+            "properties": {
+              "first_name": { "type": "string" },
+              "last_name": { "type": "string" },
+              "date_of_birth": { "type": "string", "description": "DOB as MM/DD/YYYY or ISO YYYY-MM-DD." },
+              "sex": { "type": "string", "enum": ["Male", "Female", "Other", "Decline to Answer"] },
+              "phone_number": { "type": "string" },
+              "email": { "type": ["string", "null"] },
+              "address_line_1": { "type": "string" },
+              "address_line_2": { "type": ["string", "null"] },
+              "city": { "type": "string" },
+              "state": { "type": "string", "description": "US state name or 2-letter code." },
+              "zip_code": { "type": "string" },
+              "insurance_provider": { "type": ["string", "null"] },
+              "insurance_member_id": { "type": ["string", "null"] },
+              "preferred_language": { "type": "string" },
+              "emergency_contact_name": { "type": ["string", "null"] },
+              "emergency_contact_phone": { "type": ["string", "null"] }
+            },
+            "required": ["first_name", "last_name", "date_of_birth", "sex", "phone_number", "address_line_1", "city", "state", "zip_code"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["caller_confirmation", "patient"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "async": false,
+    "function": {
+      "name": "update_patient",
+      "description": "Update only the changed fields of an identity-verified returning patient, and only after the caller explicitly confirms the read-back of those changes. Do not send unchanged fields.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "caller_confirmation": { "type": "string", "enum": ["yes"], "description": "Set to yes only after an explicit caller confirmation of the read-back." },
+          "patient_id": { "type": "string", "description": "The patient_id returned only after DOB verification." },
+          "changes": {
+            "type": "object",
+            "properties": {
+              "first_name": { "type": "string" },
+              "last_name": { "type": "string" },
+              "date_of_birth": { "type": "string" },
+              "sex": { "type": "string", "enum": ["Male", "Female", "Other", "Decline to Answer"] },
+              "phone_number": { "type": "string" },
+              "email": { "type": ["string", "null"] },
+              "address_line_1": { "type": "string" },
+              "address_line_2": { "type": ["string", "null"] },
+              "city": { "type": "string" },
+              "state": { "type": "string" },
+              "zip_code": { "type": "string" },
+              "insurance_provider": { "type": ["string", "null"] },
+              "insurance_member_id": { "type": ["string", "null"] },
+              "preferred_language": { "type": "string" },
+              "emergency_contact_name": { "type": ["string", "null"] },
+              "emergency_contact_phone": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": ["caller_confirmation", "patient_id", "changes"],
+        "additionalProperties": false
+      }
+    }
+  }
+]

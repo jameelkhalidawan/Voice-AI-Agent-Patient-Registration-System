@@ -96,7 +96,7 @@ To run the automated suite against its isolated temporary SQLite databases:
 python -m pytest -q
 ```
 
-The tests do not use the configured hosted database. **Latest reported result:** 40 passed in 1.13 seconds (run by the project owner on 2026-10-24).
+The tests do not use the configured hosted database. Latest run reported by the project owner: **40 passed in 1.13 seconds** on 2026-10-24.
 
 ## Environment variables
 
@@ -181,6 +181,10 @@ The response includes `data.patient_id`; use that ID for subsequent GET, PUT, or
 
 The prompt emphasizes a natural one-question-at-a-time flow, accepting out-of-order answers, avoiding repeated questions, validating each field, reading back details, and saving only after a clear affirmative. The backend remains authoritative for validation and persistence. The assistant's live prompt and tool configuration are maintained separately in Vapi; keep them synchronized with the checked-in files.
 
+## Observability
+
+Successful voice registrations log the final collected payload as structured JSON to stdout, which is available in the deployment's function logs. The call status and final payload are also stored in `call_logs`; the end-of-call report can attach a transcript and summary when Vapi sends them.
+
 ## Tests
 
 Run all tests locally:
@@ -189,7 +193,25 @@ Run all tests locally:
 python -m pytest -q
 ```
 
-Fixtures create isolated temporary SQLite databases. They cover API routes, service behavior, validators, and Vapi tool confirmation/identity handling. The project owner reported 40 passing tests in 1.13 seconds on 2026-10-24. Tests were not run as part of this README update.
+Fixtures create isolated temporary SQLite databases. They cover API routes, service behavior, validators, and Vapi tool confirmation/identity handling. Latest run reported by the project owner: **40 passed in 1.13 seconds** on 2026-10-24.
+
+## Deploying
+
+1. Connect the GitHub repository to the Vercel project and deploy the intended branch. Add `DATABASE_URL`, `API_KEY`, `VAPI_WEBHOOK_SECRET`, `APP_ENV`, and `LOG_LEVEL` in Vercel's environment settings; keep secret values out of Git.
+2. With `DATABASE_URL` set locally to the intended Supabase PostgreSQL connection string, create the tables once by running `python -m scripts.create_schema` from the repository root. This uses SQLAlchemy `create_all`; it is not a versioned migration system.
+3. Set Vapi's server URL to `https://voice-ai-agent-patient-registration-navy.vercel.app/webhook/vapi` and configure its Bearer credential with the same secret value as Vercel's `VAPI_WEBHOOK_SECRET`.
+4. After deployment, verify `/health`, `/docs`, and one synthetic end-to-end call. The Vapi dashboard prompt, tool definitions, credential, and phone-number assignment are configured separately from the repository.
+
+## Edge cases exercised
+
+The project owner reported manual API checks for successful create/read/update, filters, soft-delete exclusion, duplicate phone rejection, invalid write-key rejection, malformed IDs/JSON, invalid phone/DOB/state/ZIP/name/sex/email input, missing required fields, and rejection of SQL-style and script-like input. Reported voice checks include a new-patient registration, returning-caller lookup with update declined, surname correction after read-back, out-of-order answers, correction of a short phone input, and an emergency statement.
+
+Silence/timeout behavior, start-over, caller hang-up before confirmation, prompt-injection resistance, and simulated database-write failure have not been confirmed in this review.
+
+## Bonus features
+
+- **Present:** duplicate-phone lookup and returning-caller identity verification; end-of-call transcript/summary storage when Vapi supplies the report; automated tests.
+- **Not implemented:** appointment scheduling, a patient dashboard, and a public endpoint for viewing call transcripts. Spanish responses are prompt-guided but are not a fully tested localization feature.
 
 ## Known limitations and trade-offs
 
@@ -200,7 +222,6 @@ Fixtures create isolated temporary SQLite databases. They cover API routes, serv
 - **Rate limiting:** the simple middleware keeps counters in process memory, so it is not a global limit across serverless instances.
 - **Voice and free-tier availability:** latency, transcription quality, number availability, trial credits, and provider free limits can change; verify balances and current provider terms before review.
 - **Call logs:** transcripts may contain personal details; only fake/test calls should be used for this assignment demo.
-- **Not implemented:** appointment scheduling and a patient dashboard. Transcript/summary persistence exists in the webhook/model, but a public transcript-view endpoint is not implemented. Spanish responses are prompt-guided and not a fully tested localization feature.
 - **Cold starts/availability:** the deployment host may sleep or impose execution limits depending on current plan settings; verify availability shortly before the review call.
 
 ## Next steps
@@ -210,4 +231,8 @@ Fixtures create isolated temporary SQLite databases. They cover API routes, serv
 3. Add integration tests for webhook event payloads and failure cases.
 4. Add authenticated call-log retrieval if transcript review is needed.
 5. Consider appointment scheduling, a dashboard, and full Spanish localization only after the core registration flow is stable.
+
+## AI assistance
+
+AI coding assistants were used during development; I ran the test suite and can explain the implementation and its trade-offs.
 
